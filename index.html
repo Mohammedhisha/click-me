@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>CLICK ME</title>
+
+<!-- Open Graph / Snapchat / iMessage Link Preview Metadata -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="CLICK ME">
+<meta property="og:description" content="by screwwwwwwww">
+<meta property="og:url" content="https://mohammedhisha.github.io/click-me/">
+<meta property="og:image" content="https://mohammedhisha.github.io/click-me/assets/preview.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="CLICK ME">
+<meta name="twitter:description" content="by screwwwwwwww">
+<meta name="twitter:image" content="https://mohammedhisha.github.io/click-me/assets/preview.png">
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    height: 100%; background: #000; color: #fff; overflow: hidden;
+    font-family: Impact, "Anton", "Arial Black", "Helvetica Neue", sans-serif;
+    touch-action: manipulation; user-select: none; -webkit-user-select: none;
+    overscroll-behavior: none;
+  }
+  .meme-text {
+    text-transform: uppercase; letter-spacing: .02em; color: #fff;
+    -webkit-text-stroke: 2px #000; paint-order: stroke fill;
+    text-shadow: 3px 3px 0 #000, -3px 3px 0 #000, 3px -3px 0 #000, -3px -3px 0 #000;
+  }
+
+  /* ---------- QUESTION SCREEN ---------- */
+  #ask {
+    position: fixed; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 5vh; padding: 24px;
+    padding-bottom: calc(24px + env(safe-area-inset-bottom));
+    z-index: 10;
+  }
+  #question {
+    font-size: clamp(40px, 13vw, 92px); text-align: center; line-height: 1.08;
+    min-height: 1.1em;
+    will-change: transform, opacity;
+    transition: opacity .4s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1);
+  }
+  #question.small { font-size: clamp(28px, 9vw, 60px); }
+  #question.fade-out { opacity: 0; transform: translateY(-18px) scale(.96); }
+
+  /* Typing caret (keyboard pointer) */
+  #caret {
+    display: inline-block;
+    width: .09em;
+    height: .88em;
+    background: #fff;
+    margin-left: .08em;
+    vertical-align: -0.07em;
+    box-shadow: 2px 2px 0 #000, -1px -1px 0 #000;
+    animation: caretBlink .75s steps(1) infinite;
+  }
+  #caret.typing { animation: none; opacity: 1; }
+  @keyframes caretBlink { 50% { opacity: 0; } }
+
+  .buttons {
+    display: flex; gap: 16px; align-items: center; justify-content: center;
+    width: 100%; flex-wrap: wrap;
+    opacity: 0; transform: translateY(14px);
+    pointer-events: none;
+    transition: opacity .38s cubic-bezier(.22,1,.36,1), transform .38s cubic-bezier(.22,1,.36,1);
+  }
+  .buttons.ready {
+    opacity: 1; transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  button {
+    font-family: inherit; text-transform: uppercase; cursor: pointer;
+    border: 4px solid #fff; border-radius: 16px; color: #000;
+    padding: 16px 28px; font-size: clamp(22px, 6.5vw, 34px);
+    transition: transform .28s cubic-bezier(.4,0,.2,1), opacity .28s cubic-bezier(.4,0,.2,1), background-color .28s ease;
+    overflow: hidden; position: relative;
+  }
+  button span.label {
+    display: inline-block;
+    transition: opacity .22s cubic-bezier(.4,0,.2,1), transform .22s cubic-bezier(.4,0,.2,1);
+  }
+  button span.label.swap-out { opacity: 0; transform: translateY(-14px) scale(.92); }
+  button span.label.swap-in-prep { opacity: 0; transform: translateY(14px) scale(.92); transition: none; }
+
+  #yes { background: #39ff14; max-width: 90vw; }
+  #no  { background: #ff2d55; }
+  #go  {
+    background: #ffd400; display: none; opacity: 0; transform: translateY(18px) scale(.95);
+    pointer-events: none;
+    transition: opacity .45s cubic-bezier(.22,1,.36,1), transform .45s cubic-bezier(.22,1,.36,1);
+  }
+  #go.show { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+
+  /* ---------- SLOT MACHINE ---------- */
+  #slot {
+    display: none; position: relative; padding: 18px 24px 16px;
+    border-radius: 26px; background: linear-gradient(#c0001a, #6d0010);
+    border: 5px solid #ffd400;
+    box-shadow: 0 0 0 4px #000, 0 0 40px #ffd40066, inset 0 0 20px #0008;
+    opacity: 0; transform: translateY(26px) scale(.92);
+    pointer-events: none;
+    transition: opacity .5s cubic-bezier(.22,1,.36,1), transform .5s cubic-bezier(.22,1,.36,1);
+  }
+  #slot.show { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+  #slot .lights { position: absolute; left: 16px; right: 16px; top: 5px; display: flex; justify-content: space-between; }
+  #slot .lights i { width: 7px; height: 7px; border-radius: 50%; background: #fff6b0; box-shadow: 0 0 6px #ffd400; animation: blink 0.6s steps(1) infinite; }
+  #slot .lights i:nth-child(even) { animation-delay: .3s; }
+  @keyframes blink { 50% { opacity: .2; } }
+
+  .reels { position: relative; display: flex; gap: 10px; }
+  .reels::before,
+  .reels::after {
+    content: ""; position: absolute; top: 50%; translate: 0 -50%;
+    width: 0; height: 0;
+    border-top: 9px solid transparent;
+    border-bottom: 9px solid transparent;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,.85));
+    z-index: 4; pointer-events: none;
+  }
+  .reels::before { left: -17px; border-left: 13px solid #ff1e38; }
+  .reels::after  { right: -17px; border-right: 13px solid #ff1e38; }
+
+  .reel {
+    --cell: min(23vw, 100px);
+    position: relative; width: calc(var(--cell) * .8); height: calc(var(--cell) * 2.2);
+    overflow: hidden; border-radius: 12px; touch-action: none; cursor: grab;
+    background: linear-gradient(#bbb, #fff 30%, #fff 70%, #bbb);
+    box-shadow: inset 0 0 0 3px #000, inset 0 10px 18px #0007, inset 0 -10px 18px #0007;
+  }
+  .reel .d {
+    position: absolute; left: 0; right: 0; height: var(--cell); top: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: #111; font-size: calc(var(--cell) * .8); line-height: 1; will-change: transform;
+  }
+  #slotHint { margin-top: 10px; text-align: center; font-family: system-ui, sans-serif; font-size: 13px; color: #ffe; opacity: .85; }
+
+  /* ---------- CLEAN EXIT TRANSITION ---------- */
+  .exit-smooth {
+    transition: opacity .5s cubic-bezier(.4,0,.2,1), transform .5s cubic-bezier(.4,0,.2,1), filter .5s ease !important;
+    opacity: 0 !important;
+    transform: translateY(-20px) scale(.92) !important;
+    filter: blur(4px);
+    pointer-events: none !important;
+  }
+
+  .flash { position: fixed; inset: 0; background: #fff; opacity: 0; pointer-events: none; z-index: 50; }
+  .flash.go { animation: flash .5s ease-out; }
+  @keyframes flash { 0% { opacity: 1; } 100% { opacity: 0; } }
+
+  /* ---------- FINALE ---------- */
+  #chaos {
+    position: fixed; inset: 0; overflow: hidden; visibility: hidden; background: #000; z-index: 5;
+    transition: opacity .55s cubic-bezier(.4,0,.2,1), filter .55s ease;
+  }
+  #chaos.on { visibility: visible; }
+  #chaos.fade-out { opacity: 0; filter: blur(10px); }
+  #space { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .15s ease; }
+  #space.on { opacity: 1; }
+
+  #count {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-size: clamp(130px, 42vw, 280px); z-index: 7; pointer-events: none; opacity: 0;
+  }
+  #count.pop { animation: countPop 1.25s cubic-bezier(.2,1.6,.4,1) forwards; }
+  @keyframes countPop {
+    0%   { opacity: 0; transform: scale(2.4) rotate(-6deg); }
+    22%  { opacity: 1; transform: scale(1) rotate(0deg); }
+    82%  { opacity: 1; transform: scale(1.05); }
+    100% { opacity: 0; transform: scale(.6); }
+  }
+
+  #stage { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; perspective: 1000px; z-index: 4; }
+  #handWrap { position: relative; width: 60vh; height: 60vh; transform-style: preserve-3d; opacity: 0; will-change: transform, opacity, filter; }
+  #handWrap img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+  #handInner { position: absolute; inset: 0; }
+  #handInner.glitch { filter: drop-shadow(7px 0 0 rgba(255,0,60,.8)) drop-shadow(-7px 0 0 rgba(0,240,255,.8)); }
+
+  #screw {
+    position: absolute; left: 0; right: 0; top: calc(9vh + env(safe-area-inset-top)); z-index: 6;
+    text-align: center; font-size: clamp(34px, 11vw, 84px); line-height: 1; padding: 0 10px;
+    opacity: 0; pointer-events: none; word-break: break-all;
+    filter: drop-shadow(5px 0 0 rgba(255,0,60,.85)) drop-shadow(-5px 0 0 rgba(0,240,255,.85));
+  }
+  #screw.slam { animation: slam .35s cubic-bezier(.2,1.6,.4,1) forwards; }
+  @keyframes slam { 0% { opacity: 0; transform: scale(3) rotate(-8deg); } 100% { opacity: 1; transform: scale(1) rotate(0); } }
+  #screw.gone { animation: gone .5s ease-in forwards; }
+  @keyframes gone { to { opacity: 0; transform: scale(2.5) rotate(10deg); filter: blur(6px); } }
+
+  .mini { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 3; object-fit: contain; will-change: transform; }
+  #scan {
+    position: absolute; inset: 0; pointer-events: none; z-index: 8; opacity: .12;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,.4) 0 2px, transparent 2px 4px);
+  }
+  .slice {
+    position: absolute; left: 0; right: 0; z-index: 9; pointer-events: none;
+    backdrop-filter: hue-rotate(180deg) invert(1); -webkit-backdrop-filter: hue-rotate(180deg) invert(1);
+  }
+
+  /* ---------- ENDING CAT SCREEN ---------- */
+  #endCat {
+    position: fixed; inset: 0; background: #000; display: flex;
+    align-items: center; justify-content: center; padding: 20px; z-index: 60;
+    opacity: 0; pointer-events: none;
+    transition: opacity .65s cubic-bezier(.22,1,.36,1);
+  }
+  #endCat.show { opacity: 1; pointer-events: auto; }
+  #endCat img {
+    max-width: min(88vw, 480px); max-height: 75vh; object-fit: contain;
+    border-radius: 14px;
+    transform: translateY(18px) scale(.88);
+    transition: transform .7s cubic-bezier(.22,1,.36,1);
+  }
+  #endCat.show img { transform: translateY(0) scale(1); }
+</style>
+</head>
+<body>
+
+<!-- QUESTION -->
+<section id="ask">
+  <h1 id="question" class="meme-text"><span id="qText"></span><span id="caret"></span></h1>
+  <div id="slot">
+    <div class="lights"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="reels">
+      <div class="reel" data-i="0"></div>
+      <div class="reel" data-i="1"></div>
+      <div class="reel" data-i="2"></div>
+    </div>
+    <div id="slotHint">swipe the reels ↕</div>
+  </div>
+  <div class="buttons" id="btnRow">
+    <button id="yes"><span class="label" id="yesLabel">Yes</span></button>
+    <button id="no"><span class="label">No</span></button>
+    <button id="go"><span class="label" id="goLabel">this one</span></button>
+  </div>
+</section>
+
+<!-- FINALE -->
+<section id="chaos" aria-hidden="true">
+  <video id="space" muted playsinline webkit-playsinline></video>
+  <div id="count" class="meme-text"></div>
+  <div id="stage">
+    <div id="handWrap">
+      <div id="handInner">
+        <img id="handFront" alt="">
+        <img id="handSide"  alt="" style="opacity:0">
+      </div>
+    </div>
+  </div>
+  <div id="screw" class="meme-text"></div>
+  <div id="scan"></div>
+</section>
+
+<audio id="audioFallback" playsinline></audio>
+<audio id="catAudioFallback" playsinline></audio>
+<div id="endCat"><img id="endCatImg" alt=""></div>
+<div class="flash" id="flash"></div>
+
+<script>
+(() => {
+  // ---------- TIMELINE ----------
+  const INTRO = 209 / 30;     // 6.967s build-up (0:20–0:27) before the silent space nebula drop
+  const LOOP = 32;            // 20 bars @ 150 BPM (0:27–0:59)
+  const BEAT = 0.4;
+  const BG_CHANGE_AT = 6.3;   // 6.3s into space section (0:33.3): space nebula changes to blue tunnel
+  const STAND = [[0.1, 3.3], [4.5, 4.8], [8.9, 9.1], [9.3, 9.7], [15.1, 15.3], [15.5, 15.9]];
+  const GHOST = [[5.5, 5.7], [5.9, 6.1]];
+  const LOOKS = [
+    [0,    6.3,  t => "none"],
+    [6.3,  19.1, t => `saturate(1.7) contrast(1.25) brightness(.8) hue-rotate(${200 + Math.sin(t * 3) * 60}deg)`],
+    [19.1, 23.4, t => `brightness(.55) saturate(2.4) hue-rotate(${(t * 240) % 360}deg)`],
+    [23.4, 25.2, t => `invert(.85) hue-rotate(${(t * 180) % 360}deg) saturate(1.6)`],
+    [25.2, 32.1, t => `invert(.8) hue-rotate(${190 + Math.sin(t * 4) * 50}deg) saturate(1.5) brightness(1.1)`]
+  ];
+  const SPIN_SPEED = 900;
+
+  const $ = id => document.getElementById(id);
+  const yes = $("yes"), yesLabel = $("yesLabel"), no = $("no"), go = $("go"), goLabel = $("goLabel"),
+        btnRow = $("btnRow"), q = $("question"), qText = $("qText"), caret = $("caret"),
+        slot = $("slot"), video = $("space"), countEl = $("count"),
+        front = $("handFront"), side = $("handSide"), endCat = $("endCat"), endCatImg = $("endCatImg"),
+        audioFallback = $("audioFallback"), catAudioFallback = $("catAudioFallback");
+  let step = 0, noScale = 1, yesScale = 1, favNum = 0, busy = true, finaleStarted = false, ended = false, miniTimer = null;
+
+  // ---------- IN-MEMORY ASSET PRELOADER (fetches every asset ONCE into RAM) ----------
+  let ac, rawAudioBytes = null, rawCatAudioBytes = null, finaleBuffer = null, catLaughBuffer = null;
+  let finaleSource = null, finaleGain = null, audioStartCtxTime = 0;
+  let frontBlobUrl = "assets/hand-front.png", sideBlobUrl = "assets/hand-side.png";
+
+  function ensureAudioContext() {
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!ac && AC) ac = new AC();
+      if (ac && ac.state === "suspended") ac.resume();
+    } catch (e) {}
+  }
+
+  async function ensureAudioDecoded() {
+    try {
+      ensureAudioContext();
+      if (!ac) return;
+      if (!finaleBuffer && rawAudioBytes) {
+        finaleBuffer = await ac.decodeAudioData(rawAudioBytes.slice(0));
+      }
+      if (!catLaughBuffer && rawCatAudioBytes) {
+        catLaughBuffer = await ac.decodeAudioData(rawCatAudioBytes.slice(0));
+      }
+    } catch (e) {}
+  }
+
+  function unlockIOSAudio() {
+    ensureAudioContext();
+    try {
+      if (ac) {
+        const b = ac.createBuffer(1, 1, 22050);
+        const s = ac.createBufferSource();
+        s.buffer = b;
+        s.connect(ac.destination);
+        s.start(0);
+      }
+    } catch (e) {}
+    ensureAudioDecoded();
+  }
+
+  // Start downloading all assets into RAM immediately on page load
+  const assetsReadyPromise = (async () => {
+    try {
+      const [fImg1, fImg2, fCat, fAud, fCatAud, fVid] = await Promise.all([
+        fetch("assets/hand-front.png", { cache: "force-cache" }).then(r => r.blob()),
+        fetch("assets/hand-side.png",  { cache: "force-cache" }).then(r => r.blob()),
+        fetch("assets/nyehehhejehejehehe-cat.png", { cache: "force-cache" }).then(r => r.blob()),
+        fetch("assets/finale.m4a",     { cache: "force-cache" }).then(r => r.arrayBuffer()),
+        fetch("assets/cat-laugh.m4a",  { cache: "force-cache" }).then(r => r.arrayBuffer()),
+        fetch("assets/finale.mov",     { cache: "force-cache" }).then(r => r.blob())
+      ]);
+      frontBlobUrl = URL.createObjectURL(fImg1);
+      sideBlobUrl  = URL.createObjectURL(fImg2);
+      front.src = frontBlobUrl;
+      side.src  = sideBlobUrl;
+      endCatImg.src = URL.createObjectURL(fCat);
+      await Promise.all([
+        front.decode ? front.decode().catch(() => {}) : Promise.resolve(),
+        side.decode  ? side.decode().catch(() => {})  : Promise.resolve(),
+        endCatImg.decode ? endCatImg.decode().catch(() => {}) : Promise.resolve()
+      ]);
+
+      rawAudioBytes = fAud;
+      rawCatAudioBytes = fCatAud;
+      audioFallback.src = URL.createObjectURL(new Blob([fAud], { type: "audio/mp4" }));
+      catAudioFallback.src = URL.createObjectURL(new Blob([fCatAud], { type: "audio/mp4" }));
+      audioFallback.load();
+      catAudioFallback.load();
+      await ensureAudioDecoded();
+
+      video.src = URL.createObjectURL(new Blob([fVid], { type: "video/mp4" }));
+      video.load();
+      await new Promise(resolve => {
+        if (video.readyState >= 3) return resolve();
+        const done = () => { video.removeEventListener("canplaythrough", done); resolve(); };
+        video.addEventListener("canplaythrough", done);
+        setTimeout(done, 1500);
+      });
+    } catch (e) {
+      front.src = "assets/hand-front.png";
+      side.src  = "assets/hand-side.png";
+      endCatImg.src = "assets/nyehehhejehejehehe-cat.png";
+      audioFallback.src = "assets/finale.m4a";
+      catAudioFallback.src = "assets/cat-laugh.m4a";
+      video.src = "assets/finale.mov";
+    }
+  })();
+
+  function tick(pitch = 1) {
+    try {
+      ensureAudioContext();
+      if (!ac) return;
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.type = "square"; o.frequency.value = 1400 * pitch;
+      g.gain.setValueAtTime(0.06, ac.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 0.03);
+      o.connect(g).connect(ac.destination); o.start(); o.stop(ac.currentTime + 0.035);
+    } catch (e) {}
+  }
+
+  // ---------- TYPEWRITER HELPER ----------
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  async function typeText(str, speed = 65) {
+    caret.classList.add("typing");
+    for (const ch of str) {
+      qText.innerHTML += ch === "\n" ? "<br>" : ch;
+      await wait(speed + (Math.random() * 24 - 12));
+    }
+    caret.classList.remove("typing");
+  }
+
+  (async () => {
+    await wait(260);
+    await typeText("Are u dustin?", 65);
+    btnRow.classList.add("ready");
+    busy = false;
+  })();
+
+  // ---------- QUESTION FLOW WITH TYPING & SMOOTH TRANSITIONS ----------
+  yes.addEventListener("click", () => {
+    unlockIOSAudio();
+    if (busy) return;
+    step++;
+    if (step === 1) {
+      busy = true;
+      yesLabel.classList.add("swap-out");
+      yes.style.transform = `scale(${yesScale * 1.06})`;
+      setTimeout(() => {
+        yesLabel.textContent = "r u sure?";
+        yesLabel.classList.remove("swap-out");
+        yesLabel.classList.add("swap-in-prep");
+        void yesLabel.offsetWidth;
+        yesLabel.classList.remove("swap-in-prep");
+        yes.style.transform = `scale(${yesScale})`;
+        setTimeout(() => { busy = false; }, 220);
+      }, 200);
+    } else if (step === 2) {
+      busy = true;
+      q.classList.add("fade-out");
+      yes.style.opacity = "0";
+      yes.style.transform = `scale(${yesScale * 0.85})`;
+      no.style.opacity = "0";
+      no.style.transform = `scale(${noScale * 0.85})`;
+
+      setTimeout(async () => {
+        yes.style.display = "none";
+        no.style.display = "none";
+
+        slot.style.display = "block";
+        go.style.display = "inline-block";
+        reels.forEach(r => r.render());
+
+        q.classList.add("small");
+        q.classList.remove("fade-out");
+
+        q.style.transition = "none";
+        q.style.transform = "none";
+        qText.innerHTML = "how can i be sure?<br>whats ur favorit number?";
+        const rect = q.getBoundingClientRect();
+        const centerOffsetY = (window.innerHeight / 2) - (rect.top + rect.height / 2);
+
+        qText.innerHTML = "";
+        q.style.opacity = "1";
+        q.style.transform = `translateY(${centerOffsetY}px)`;
+        void q.offsetWidth;
+        q.style.transition = "opacity .4s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1)";
+
+        await wait(200);
+        await typeText("how can i be sure?", 62);
+        await wait(1400);
+        await typeText("\nwhats ur favorit number?", 62);
+
+        await wait(1200);
+        q.style.transform = "translateY(0px)";
+        setTimeout(() => {
+          slot.classList.add("show");
+          setTimeout(() => {
+            go.classList.add("show");
+            busy = false;
+          }, 140);
+        }, 180);
+      }, 360);
+    }
+  });
+
+  no.addEventListener("click", () => {
+    unlockIOSAudio();
+    if (busy) return;
+    noScale = Math.max(0, noScale - 0.22);
+    yesScale = Math.min(1.6, yesScale + 0.12);
+    no.style.transform = `scale(${noScale})`;
+    yes.style.transform = `scale(${yesScale})`;
+    if (noScale <= 0.05) { no.style.pointerEvents = "none"; no.style.opacity = 0; }
+  });
+
+  go.addEventListener("click", async () => {
+    unlockIOSAudio();
+    if (finaleStarted) return;
+    finaleStarted = true;
+    go.disabled = true;
+
+    reels.forEach(r => {
+      r.dragging = false;
+      r.vel = 0;
+      r.pos = Math.round(r.pos);
+      r.moving = false;
+      r.render();
+    });
+    favNum = parseInt(reels.map(r => r.digit()).join(""), 10) || 0;
+
+    goLabel.textContent = "...";
+    await assetsReadyPromise;
+    await ensureAudioDecoded();
+    startFinale();
+  });
+
+  // ---------- SLOT REELS ----------
+  const reels = [...document.querySelectorAll(".reel")].map((el, idx) => {
+    const cells = [];
+    for (let k = 0; k < 7; k++) { const d = document.createElement("div"); d.className = "d"; el.appendChild(d); cells.push(d); }
+    const r = { el, pos: [0, 0, 0][idx], vel: 0, dragging: false, moving: false, lastY: 0, lastT: 0, lastTick: 0 };
+    const cell = () => cells[0].offsetHeight || 80;
+    r.digit = () => ((Math.round(r.pos) % 10) + 10) % 10;
+    r.render = () => {
+      const base = Math.floor(r.pos), frac = r.pos - base, h = cell();
+      cells.forEach((d, i) => {
+        const k = i - 3;
+        d.textContent = (((base + k) % 10) + 10) % 10;
+        const y = (k - frac) * h;
+        d.style.transform = `translateY(calc(-50% + ${y}px)) scale(${1 - Math.min(.35, Math.abs(k - frac) * .14)})`;
+      });
+      const now = Math.round(r.pos);
+      if (now !== r.lastTick) { r.lastTick = now; tick(1 + idx * .15); if (navigator.vibrate) navigator.vibrate(4); }
+    };
+    el.addEventListener("pointerdown", e => {
+      el.setPointerCapture(e.pointerId);
+      r.dragging = true; r.moving = true; r.vel = 0; r.lastY = e.clientY; r.lastT = performance.now();
+      tick();
+    });
+    el.addEventListener("pointermove", e => {
+      if (!r.dragging) return;
+      const now = performance.now(), dy = e.clientY - r.lastY, dt = Math.max(1, now - r.lastT);
+      r.pos -= dy / cell();
+      r.vel = (-dy / cell()) / (dt / 1000) * .8 + r.vel * .2;
+      r.lastY = e.clientY; r.lastT = now;
+    });
+    const release = () => { if (!r.dragging) return; r.dragging = false; if (performance.now() - r.lastT > 80) r.vel = 0; };
+    el.addEventListener("pointerup", release);
+    el.addEventListener("pointercancel", release);
+    r.lastTick = Math.round(r.pos);
+    return r;
+  });
+
+  let lastSlot = performance.now();
+  (function slotLoop(now) {
+    const dt = Math.min(.05, (now - lastSlot) / 1000); lastSlot = now;
+    reels.forEach(r => {
+      if (!r.dragging) {
+        if (Math.abs(r.vel) > 1.2) {
+          r.pos += r.vel * dt; r.vel *= Math.pow(0.12, dt);
+        } else {
+          r.vel = 0;
+          const target = Math.round(r.pos);
+          r.pos += (target - r.pos) * Math.min(1, dt * 14);
+          if (Math.abs(target - r.pos) < .002) { r.pos = target; r.moving = false; }
+        }
+      }
+      r.render();
+    });
+    if ($("ask").style.display !== "none") requestAnimationFrame(slotLoop);
+  })(lastSlot);
+
+  // ---------- FINALE ----------
+  const wrap = $("handWrap"), inner = $("handInner"), chaos = $("chaos"), screw = $("screw");
+  let finaleStart = 0, lastCountNum = 0, screwHidden = false, wws = 8;
+
+  function playFinaleSound() {
+    ensureAudioContext();
+    if (ac && finaleBuffer) {
+      finaleSource = ac.createBufferSource();
+      finaleGain = ac.createGain();
+      finaleSource.buffer = finaleBuffer;
+      finaleSource.loop = false;
+      finaleSource.connect(finaleGain).connect(ac.destination);
+      audioStartCtxTime = ac.currentTime;
+      finaleSource.start(0);
+    } else {
+      audioFallback.currentTime = 0;
+      audioFallback.loop = false;
+      audioFallback.play().catch(() => {});
+    }
+  }
+
+  function playCatLaughSound() {
+    ensureAudioContext();
+    if (ac && catLaughBuffer) {
+      const src = ac.createBufferSource();
+      src.buffer = catLaughBuffer;
+      src.connect(ac.destination);
+      src.start(0);
+    } else {
+      catAudioFallback.currentTime = 0;
+      catAudioFallback.play().catch(() => {});
+    }
+  }
+
+  function startFinale() {
+    q.classList.add("exit-smooth");
+    setTimeout(() => slot.classList.add("exit-smooth"), 70);
+    setTimeout(() => go.classList.add("exit-smooth"), 140);
+
+    $("screw").textContent = `+${favNum} for screwwwwwwww`;
+
+    setTimeout(() => {
+      $("ask").style.display = "none";
+      chaos.classList.add("on");
+      sizeHand();
+
+      video.currentTime = 0;
+      video.muted = true;
+      video.play().catch(() => {});
+      playFinaleSound();
+
+      finaleStart = performance.now();
+      last = finaleStart;
+      requestAnimationFrame(loop);
+      miniTimer = setInterval(() => { if (dropped && spinning && !ended) spawnMini(); }, 260);
+    }, 520);
+  }
+
+  function sizeHand() {
+    const W = innerWidth, H = innerHeight;
+    const shownH = Math.max(H, W * 9 / 16);
+    wrap.style.width = wrap.style.height = Math.min(shownH * 0.78, W * 1.35) + "px";
+  }
+  addEventListener("resize", sizeHand);
+
+  const within = (t, list) => list.some(([a, b]) => t >= a && t < b);
+  let angle = 0, last = performance.now(), spinning = false, dropped = false;
+
+  function getTimelineSeconds(now) {
+    if (finaleSource && ac) {
+      return ac.currentTime - audioStartCtxTime;
+    }
+    if (!video.paused && video.currentTime > 0.05) {
+      return video.currentTime;
+    }
+    return (now - finaleStart) / 1000;
+  }
+
+  function showEndCat() {
+    ended = true;
+    if (miniTimer) clearInterval(miniTimer);
+
+    // Smoothly fade out chaos screen & crossfade into the Mwehehe/Nyehehe cat + sound
+    chaos.style.transform = "none";
+    chaos.classList.add("fade-out");
+    try {
+      if (finaleGain && ac) {
+        finaleGain.gain.setValueAtTime(1, ac.currentTime);
+        finaleGain.gain.linearRampToValueAtTime(0.0001, ac.currentTime + 0.45);
+      }
+    } catch (e) {}
+
+    setTimeout(() => {
+      try { if (finaleSource) finaleSource.stop(); } catch (e) {}
+      try { audioFallback.pause(); } catch (e) {}
+      try { video.pause(); } catch (e) {}
+      chaos.classList.remove("on");
+      endCat.classList.add("show");
+      playCatLaughSound();
+    }, 380);
+  }
+
+  function loop(now) {
+    if (ended) return;
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    const T = getTimelineSeconds(now);
+
+    if (T >= INTRO + LOOP) {
+      showEndCat();
+      return;
+    }
+
+    if (T < INTRO) intro(T);
+    else {
+      if (!dropped) drop();
+      chaosFrame(T - INTRO, now, dt);
+    }
+    requestAnimationFrame(loop);
+  }
+
+  // ----- build-up (0:20–0:27): count from 5 down to 1 until the silent space part starts -----
+  function intro(T) {
+    const stepDur = INTRO / 5;
+    const num = Math.max(1, 5 - Math.floor(T / stepDur));
+    if (num !== lastCountNum) {
+      lastCountNum = num;
+      countEl.textContent = String(num);
+      countEl.classList.remove("pop");
+      void countEl.offsetWidth;
+      countEl.classList.add("pop");
+      if (navigator.vibrate) navigator.vibrate(40);
+    }
+  }
+
+  // ----- 0:27 silent part with the space background: show hand + "+N for screwwwwwwww" -----
+  function drop() {
+    dropped = true;
+    countEl.style.display = "none";
+    video.classList.add("on");
+    if (Math.abs(video.currentTime - INTRO) > 0.35) {
+      try { video.currentTime = INTRO; } catch (e) {}
+    }
+    const f = $("flash"); f.classList.remove("go"); void f.offsetWidth; f.classList.add("go");
+    wrap.style.opacity = 1;
+    screw.classList.add("slam");
+    angle = 0;
+    burst();
+  }
+
+  function faceSide() {
+    const a = ((angle % 360) + 360) % 360;
+    const back = a > 90 && a < 270;
+    side.style.opacity = back ? 1 : 0;
+    front.style.opacity = back ? 0 : 1;
+  }
+
+  // ----- the loop: hand copies the cat; "+N for screwwww" stays until the background changes at t = 6.3s -----
+  function chaosFrame(t, now, dt) {
+    let screwShake = 0;
+    if (!screwHidden) {
+      if (t < BG_CHANGE_AT) {
+        const p = t / BG_CHANGE_AT;
+        const want = 8 + Math.floor(t * 5);
+        if (want !== wws) { wws = want; screw.textContent = `+${favNum} for scre${"w".repeat(wws)}`; }
+        screw.style.transform = `scale(${1 + p * .14}) rotate(${(Math.random() - .5) * (2 + p * 6)}deg)`;
+        screwShake = Math.pow(p, 1.4) * 14;
+      } else {
+        screwHidden = true;
+        screw.classList.remove("slam");
+        screw.style.transform = "";
+        screw.classList.add("gone");
+      }
+    }
+
+    const was = spinning;
+    spinning = !within(t, STAND);
+    if (spinning) angle += SPIN_SPEED * dt;
+    else angle += (Math.round(angle / 360) * 360 - angle) * Math.min(1, dt * 16);
+    if (spinning && !was) burst();
+    faceSide();
+
+    const beatPhase = (t % BEAT) / BEAT;
+    const pulse = spinning ? 1 + 0.07 * Math.pow(1 - beatPhase, 3) : 1;
+    const bob = spinning ? 0 : Math.sin(now / 150) * 2;
+    wrap.style.transform = `rotateY(${angle}deg) rotateZ(${bob}deg) scale(${pulse})`;
+
+    const look = LOOKS.find(([s, e]) => t >= s && t < e);
+    wrap.style.filter = within(t, GHOST) ? "brightness(2.6) saturate(0)" : (look ? look[2](t) : "none");
+    wrap.style.opacity = within(t, GHOST) ? .55 : 1;
+
+    if (spinning || screwShake > 0) {
+      const k = Math.max(screwShake, spinning ? Math.pow(1 - beatPhase, 4) * 18 : 0);
+      chaos.style.transform = `translate(${(Math.random() - .5) * k}px,${(Math.random() - .5) * k}px)`;
+      inner.classList.toggle("glitch", Math.random() < (spinning ? .5 : .25));
+      if (Math.random() < (spinning ? .08 : .04)) slice();
+    } else {
+      chaos.style.transform = "none";
+      inner.classList.toggle("glitch", Math.random() < .04);
+    }
+  }
+
+  function burst() {
+    if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
+    for (let i = 0; i < 8; i++) spawnMini();
+  }
+
+  function slice() {
+    const d = document.createElement("div");
+    d.className = "slice";
+    d.style.top = Math.random() * 100 + "%";
+    d.style.height = (4 + Math.random() * 36) + "px";
+    d.style.transform = `translateX(${(Math.random() - .5) * 40}px)`;
+    chaos.appendChild(d);
+    setTimeout(() => d.remove(), 70 + Math.random() * 110);
+  }
+
+  function spawnMini() {
+    const img = document.createElement("img");
+    img.src = Math.random() < .5 ? frontBlobUrl : sideBlobUrl;
+    img.className = "mini";
+    const W = innerWidth, H = innerHeight, size = 36 + Math.random() * 60;
+    img.style.width = img.style.height = size + "px";
+    const ang = Math.random() * Math.PI * 2, dist = Math.max(W, H) * (0.7 + Math.random() * .5);
+    const x0 = W / 2 - size / 2, y0 = H / 2 - size / 2;
+    const spin = (Math.random() > .5 ? 1 : -1) * (360 + Math.random() * 1080);
+    chaos.insertBefore(img, $("stage"));
+    img.animate([
+      { transform: `translate(${x0}px,${y0}px) rotate(0deg) scale(.2)` },
+      { transform: `translate(${x0 + Math.cos(ang) * dist}px,${y0 + Math.sin(ang) * dist}px) rotate(${spin}deg) scale(1.2)` }
+    ], { duration: 1000 + Math.random() * 900, easing: "cubic-bezier(.2,.6,.4,1)" }).onfinish = () => img.remove();
+  }
+})();
+</script>
+</body>
+</html>
