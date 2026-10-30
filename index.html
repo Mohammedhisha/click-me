@@ -570,6 +570,8 @@
     if (ac && finaleBuffer) {
       finaleSource = ac.createBufferSource();
       finaleGain = ac.createGain();
+      finaleGain.gain.setValueAtTime(0.01, ac.currentTime);
+      finaleGain.gain.linearRampToValueAtTime(1.0, ac.currentTime + 1.0);
       finaleSource.buffer = finaleBuffer;
       finaleSource.loop = false;
       finaleSource.connect(finaleGain).connect(ac.destination);
@@ -582,15 +584,20 @@
     }
   }
 
+  let catPlayed = false;
   function playCatLaughSound() {
+    if (catPlayed) return;
+    catPlayed = true;
     ensureAudioContext();
     if (ac && catLaughBuffer) {
       const src = ac.createBufferSource();
       src.buffer = catLaughBuffer;
+      src.loop = false;
       src.connect(ac.destination);
       src.start(0);
     } else {
       catAudioFallback.currentTime = 0;
+      catAudioFallback.loop = false;
       catAudioFallback.play().catch(() => {});
     }
   }
