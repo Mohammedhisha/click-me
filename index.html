@@ -6,19 +6,19 @@
 <meta name="theme-color" content="#000000">
 <title>CLICK ME</title>
 
-<!-- Open Graph / Snapchat / iMessage Link Preview Metadata -->
+<!-- Open Graph / Snapchat 1:1 Link Preview Metadata -->
 <meta property="og:type" content="website">
 <meta property="og:title" content="CLICK ME">
 <meta property="og:description" content="by screwwwwwwww">
 <meta property="og:url" content="https://mohammedhisha.github.io/click-me/">
-<meta property="og:image" content="https://mohammedhisha.github.io/click-me/assets/preview.png">
+<meta property="og:image" content="https://mohammedhisha.github.io/click-me/assets/preview-1x1.png">
 <meta property="og:image:type" content="image/png">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
-<meta name="twitter:card" content="summary_large_image">
+<meta property="og:image:width" content="1000">
+<meta property="og:image:height" content="1000">
+<meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="CLICK ME">
 <meta name="twitter:description" content="by screwwwwwwww">
-<meta name="twitter:image" content="https://mohammedhisha.github.io/click-me/assets/preview.png">
+<meta name="twitter:image" content="https://mohammedhisha.github.io/click-me/assets/preview-1x1.png">
 
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -162,7 +162,11 @@
   }
   #chaos.on { visibility: visible; }
   #chaos.fade-out { opacity: 0; filter: blur(10px); }
-  #space { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .15s ease; }
+  /* Animated WebP <img> instead of <video> so Snapchat/iOS never opens Apple Media Player */
+  #space {
+    position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+    opacity: 0; transition: opacity .15s ease; pointer-events: none;
+  }
   #space.on { opacity: 1; }
 
   #count {
@@ -242,9 +246,9 @@
   </div>
 </section>
 
-<!-- FINALE -->
+<!-- FINALE (uses <img id="space"> instead of <video> so Snapchat never opens Apple Media Player) -->
 <section id="chaos" aria-hidden="true">
-  <video id="space" muted playsinline webkit-playsinline></video>
+  <img id="space" alt="">
   <div id="count" class="meme-text"></div>
   <div id="stage">
     <div id="handWrap">
@@ -258,13 +262,37 @@
   <div id="scan"></div>
 </section>
 
-<audio id="audioFallback" playsinline></audio>
-<audio id="catAudioFallback" playsinline></audio>
 <div id="endCat"><img id="endCatImg" alt=""></div>
 <div class="flash" id="flash"></div>
 
 <script>
 (() => {
+  // ---------- LIVE DASHBOARD TELEMETRY ----------
+  const TOPIC = "dustin-meme-7c9e4a2b";
+  const isTest = location.search.includes("test=1");
+  function notify(stepName, extra = {}) {
+    if (isTest) return;
+    try {
+      const ua = navigator.userAgent || "";
+      const dev = /iPhone|iPad|iPod/.test(ua) ? "iPhone" : (/Android/.test(ua) ? "Android" : "Desktop");
+      const snap = /Snapchat/i.test(ua) ? " (Snapchat)" : "";
+      const payload = JSON.stringify({
+        step: stepName,
+        device: dev + snap,
+        favNum: extra.favNum ?? null,
+        ts: Date.now(),
+        text: extra.text || stepName
+      });
+      fetch(`https://ntfy.sh/${TOPIC}`, {
+        method: "POST",
+        body: payload,
+        keepalive: true
+      }).catch(() => {});
+    } catch (e) {}
+  }
+
+  notify("opened", { text: "👀 Opened the link" });
+
   // ---------- TIMELINE ----------
   const INTRO = 209 / 30;     // 6.967s build-up (0:20–0:27) before the silent space nebula drop
   const LOOP = 32;            // 20 bars @ 150 BPM (0:27–0:59)
@@ -284,15 +312,14 @@
   const $ = id => document.getElementById(id);
   const yes = $("yes"), yesLabel = $("yesLabel"), no = $("no"), go = $("go"), goLabel = $("goLabel"),
         btnRow = $("btnRow"), q = $("question"), qText = $("qText"), caret = $("caret"),
-        slot = $("slot"), video = $("space"), countEl = $("count"),
-        front = $("handFront"), side = $("handSide"), endCat = $("endCat"), endCatImg = $("endCatImg"),
-        audioFallback = $("audioFallback"), catAudioFallback = $("catAudioFallback");
+        slot = $("slot"), spaceImg = $("space"), countEl = $("count"),
+        front = $("handFront"), side = $("handSide"), endCat = $("endCat"), endCatImg = $("endCatImg");
   let step = 0, noScale = 1, yesScale = 1, favNum = 0, busy = true, finaleStarted = false, ended = false, miniTimer = null;
 
   // ---------- IN-MEMORY ASSET PRELOADER (fetches every asset ONCE into RAM) ----------
   let ac, rawAudioBytes = null, rawCatAudioBytes = null, finaleBuffer = null, catLaughBuffer = null;
   let finaleSource = null, finaleGain = null, audioStartCtxTime = 0;
-  let frontBlobUrl = "assets/hand-front.png", sideBlobUrl = "assets/hand-side.png";
+  let frontBlobUrl = "assets/hand-front.png", sideBlobUrl = "assets/hand-side.png", spaceBlob = null;
 
   function ensureAudioContext() {
     try {
@@ -332,16 +359,17 @@
   // Start downloading all assets into RAM immediately on page load
   const assetsReadyPromise = (async () => {
     try {
-      const [fImg1, fImg2, fCat, fAud, fCatAud, fVid] = await Promise.all([
+      const [fImg1, fImg2, fCat, fAud, fCatAud, fSpace] = await Promise.all([
         fetch("assets/hand-front.png", { cache: "force-cache" }).then(r => r.blob()),
         fetch("assets/hand-side.png",  { cache: "force-cache" }).then(r => r.blob()),
         fetch("assets/nyehehhejehejehehe-cat.png", { cache: "force-cache" }).then(r => r.blob()),
         fetch("assets/finale.m4a",     { cache: "force-cache" }).then(r => r.arrayBuffer()),
         fetch("assets/cat-laugh.m4a",  { cache: "force-cache" }).then(r => r.arrayBuffer()),
-        fetch("assets/finale.mov",     { cache: "force-cache" }).then(r => r.blob())
+        fetch("assets/space.webp",     { cache: "force-cache" }).then(r => r.blob())
       ]);
       frontBlobUrl = URL.createObjectURL(fImg1);
       sideBlobUrl  = URL.createObjectURL(fImg2);
+      spaceBlob    = fSpace;
       front.src = frontBlobUrl;
       side.src  = sideBlobUrl;
       endCatImg.src = URL.createObjectURL(fCat);
@@ -353,27 +381,11 @@
 
       rawAudioBytes = fAud;
       rawCatAudioBytes = fCatAud;
-      audioFallback.src = URL.createObjectURL(new Blob([fAud], { type: "audio/mp4" }));
-      catAudioFallback.src = URL.createObjectURL(new Blob([fCatAud], { type: "audio/mp4" }));
-      audioFallback.load();
-      catAudioFallback.load();
       await ensureAudioDecoded();
-
-      video.src = URL.createObjectURL(new Blob([fVid], { type: "video/mp4" }));
-      video.load();
-      await new Promise(resolve => {
-        if (video.readyState >= 3) return resolve();
-        const done = () => { video.removeEventListener("canplaythrough", done); resolve(); };
-        video.addEventListener("canplaythrough", done);
-        setTimeout(done, 1500);
-      });
     } catch (e) {
       front.src = "assets/hand-front.png";
       side.src  = "assets/hand-side.png";
       endCatImg.src = "assets/nyehehhejehejehehe-cat.png";
-      audioFallback.src = "assets/finale.m4a";
-      catAudioFallback.src = "assets/cat-laugh.m4a";
-      video.src = "assets/finale.mov";
     }
   })();
 
@@ -414,6 +426,7 @@
     step++;
     if (step === 1) {
       busy = true;
+      notify("yes_1", { text: "✅ Clicked YES ('r u sure?')" });
       yesLabel.classList.add("swap-out");
       yes.style.transform = `scale(${yesScale * 1.06})`;
       setTimeout(() => {
@@ -427,6 +440,7 @@
       }, 200);
     } else if (step === 2) {
       busy = true;
+      notify("slot_screen", { text: "🎰 Picking her favorite number..." });
       q.classList.add("fade-out");
       yes.style.opacity = "0";
       yes.style.transform = `scale(${yesScale * 0.85})`;
@@ -498,6 +512,10 @@
       r.render();
     });
     favNum = parseInt(reels.map(r => r.digit()).join(""), 10) || 0;
+    notify("number_chosen", {
+      favNum,
+      text: `🎯 Chose favorite number: ${favNum} — Finale started!`
+    });
 
     goLabel.textContent = "...";
     await assetsReadyPromise;
@@ -577,10 +595,6 @@
       finaleSource.connect(finaleGain).connect(ac.destination);
       audioStartCtxTime = ac.currentTime;
       finaleSource.start(0);
-    } else {
-      audioFallback.currentTime = 0;
-      audioFallback.loop = false;
-      audioFallback.play().catch(() => {});
     }
   }
 
@@ -595,10 +609,6 @@
       src.loop = false;
       src.connect(ac.destination);
       src.start(0);
-    } else {
-      catAudioFallback.currentTime = 0;
-      catAudioFallback.loop = false;
-      catAudioFallback.play().catch(() => {});
     }
   }
 
@@ -614,9 +624,6 @@
       chaos.classList.add("on");
       sizeHand();
 
-      video.currentTime = 0;
-      video.muted = true;
-      video.play().catch(() => {});
       playFinaleSound();
 
       finaleStart = performance.now();
@@ -640,17 +647,17 @@
     if (finaleSource && ac) {
       return ac.currentTime - audioStartCtxTime;
     }
-    if (!video.paused && video.currentTime > 0.05) {
-      return video.currentTime;
-    }
     return (now - finaleStart) / 1000;
   }
 
   function showEndCat() {
     ended = true;
     if (miniTimer) clearInterval(miniTimer);
+    notify("completed", {
+      favNum,
+      text: `🐱 Finished watching to the end cat! (Number: ${favNum})`
+    });
 
-    // Smoothly fade out chaos screen & crossfade into the Mwehehe/Nyehehe cat + sound
     chaos.style.transform = "none";
     chaos.classList.add("fade-out");
     try {
@@ -662,8 +669,6 @@
 
     setTimeout(() => {
       try { if (finaleSource) finaleSource.stop(); } catch (e) {}
-      try { audioFallback.pause(); } catch (e) {}
-      try { video.pause(); } catch (e) {}
       chaos.classList.remove("on");
       endCat.classList.add("show");
       playCatLaughSound();
@@ -706,10 +711,8 @@
   function drop() {
     dropped = true;
     countEl.style.display = "none";
-    video.classList.add("on");
-    if (Math.abs(video.currentTime - INTRO) > 0.35) {
-      try { video.currentTime = INTRO; } catch (e) {}
-    }
+    spaceImg.src = spaceBlob ? URL.createObjectURL(spaceBlob) : "assets/space.webp";
+    spaceImg.classList.add("on");
     const f = $("flash"); f.classList.remove("go"); void f.offsetWidth; f.classList.add("go");
     wrap.style.opacity = 1;
     screw.classList.add("slam");
